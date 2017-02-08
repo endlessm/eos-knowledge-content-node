@@ -182,6 +182,12 @@ function importNS(ns) {
 
 const Eknc = importNS('EosKnowledgeContent');
 
+Eknc.shittyloop = function () {
+    setInterval(function () {
+        bindings.Tick();
+    }, 10);
+};
+
 // Setup promise functions
 Eknc.Engine.prototype.get_object_for_app = bindings.EngineGetObject;
 Eknc.Engine.prototype.get_object = function (id) {
