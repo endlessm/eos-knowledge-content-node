@@ -195,4 +195,8 @@ Eknc.Engine.prototype.get_object = function (id) {
 };
 Eknc.Engine.prototype.query = bindings.EngineQuery;
 
+Eknc.Domain.prototype.read_uri = function (uri) {
+    return bindings.DomainReadURI(this, uri);
+};
+
 module.exports = Eknc;
