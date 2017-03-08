@@ -1,5 +1,6 @@
 const Eknc = require('../index.js');
 
+Eknc.start_glib_mainloop();
 let engine = Eknc.Engine.get_default();
 engine.default_app_id = 'com.endlessm.soccer.en';
 
@@ -35,5 +36,3 @@ engine.query(query).then(function (results) {
     console.log('All good');
     process.exit(0);
 });
-
-Eknc.shittyloop();

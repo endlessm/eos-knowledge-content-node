@@ -182,11 +182,7 @@ function importNS(ns) {
 
 const Eknc = importNS('EosKnowledgeContent');
 
-Eknc.shittyloop = function () {
-    setInterval(function () {
-        bindings.Tick();
-    }, 10);
-};
+Eknc.start_glib_mainloop = bindings.StartGLibMainloop;
 
 // Setup promise functions
 Eknc.Engine.prototype.get_object_for_app = bindings.EngineGetObject;
@@ -195,6 +191,7 @@ Eknc.Engine.prototype.get_object = function (id) {
 };
 Eknc.Engine.prototype.query = bindings.EngineQuery;
 
+// Primarily for setting up a 'ekn://' uri handler with electron
 Eknc.Domain.prototype.read_uri = function (uri) {
     return bindings.DomainReadURI(this, uri);
 };

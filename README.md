@@ -22,6 +22,7 @@ the app id 'com.endlessm.soccer.en'.
 
 ```js
 const Eknc = require('eos-knowledge-content');
+Eknc.start_glib_mainloop();
 
 let engine = Eknc.Engine.get_default();
 engine.default_app_id = 'com.endlessm.soccer.en';
@@ -84,13 +85,12 @@ the contents of a article, image or set in our database. This metadata is
 exposed via properties.
 
 
-### Main loop issues
-The content library is asynchronous and uses
-[glib](https://developer.gnome.org/glib/stable/)'s mainloop for powering its
-file polling and timeouts. At the moment, the only option is to drive the glib
-mainloop in an idle.
+### Running the glib mainloop
+The asynchronous methods exposed by `Engine` require glib's mainloop to be
+running to function properly.
 
-```js
-const Eknc = require('eos-knowledge-content');
-Eknc.shittyloop();
-```
+Inside electron, Chromium will drive the glib mainloop internally to power its
+own event loop, so no extra setup is needed.
+
+If running the library directly through nodejs, you will need to call the
+`start_glib_mainloop` function before making `Engine` calls.
