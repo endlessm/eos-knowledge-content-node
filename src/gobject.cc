@@ -205,6 +205,7 @@ static void ToggleNotify(gpointer user_data, GObject *gobject, gboolean toggle_d
     }
 }
 
+/* Eats a reference to the gobject passed in. */
 Local<Value> WrapperFromGObject(Isolate *isolate, GObject *gobject) {
     void *data = g_object_get_qdata (gobject, gnode_js_object_quark ());
 
