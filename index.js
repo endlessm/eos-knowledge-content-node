@@ -1,8 +1,8 @@
-var gi = require('./build/Release/ekn-bindings.node');
+const bindings = require('./build/Release/eknbindings.node');
 
 // The bootstrap from C here contains functions and methods for each object,
-// namespaced with underscores. See gi.cc for more information.
-var GIRepository = gi.Bootstrap();
+// namespaced with underscores. See bindings.cc for more information.
+const GIRepository = bindings.Bootstrap();
 
 // The GIRepository API is fairly poor, and contains methods on classes,
 // methods on objects, and what should be methods interpreted as functions,
@@ -11,28 +11,28 @@ var GIRepository = gi.Bootstrap();
 // We extend this bootstrap'd repo to define all flags / enums, which
 // are all we need to start declaring objects.
 (function() {
-    var repo = GIRepository.Repository_get_default();
-    var ns = "GIRepository";
+    let repo = GIRepository.Repository_get_default();
+    let ns = "GIRepository";
 
     // First, grab InfoType so we can find enums / flags.
-    var InfoType = makeEnum(GIRepository.Repository_find_by_name.call(repo, ns, "InfoType"));
+    let InfoType = makeEnum(GIRepository.Repository_find_by_name.call(repo, ns, "InfoType"));
 
     // Now, define all enums / flags.
-    var nInfos = GIRepository.Repository_get_n_infos.call(repo, ns);
-    for (var i = 0; i < nInfos; i++) {
-        var info = GIRepository.Repository_get_info.call(repo, ns, i);
-        var name = GIRepository.BaseInfo_get_name.call(info);
-        var type = GIRepository.BaseInfo_get_type.call(info);
+    let nInfos = GIRepository.Repository_get_n_infos.call(repo, ns);
+    for (let i = 0; i < nInfos; i++) {
+        let info = GIRepository.Repository_get_info.call(repo, ns, i);
+        let name = GIRepository.BaseInfo_get_name.call(info);
+        let type = GIRepository.BaseInfo_get_type.call(info);
         if (type === InfoType.ENUM || type === InfoType.FLAGS)
             GIRepository[name] = makeEnum(info);
     }
 })();
 
 function declareFunction(obj, info) {
-    var name = GIRepository.BaseInfo_get_name.call(info);
-    var flags = GIRepository.function_info_get_flags(info);
-    var func = gi.MakeFunction(info);
-    var target = flags & GIRepository.FunctionInfoFlags.IS_METHOD ? obj.prototype : obj;
+    let name = GIRepository.BaseInfo_get_name.call(info);
+    let flags = GIRepository.function_info_get_flags(info);
+    let func = bindings.MakeFunction(info);
+    let target = flags & GIRepository.FunctionInfoFlags.IS_METHOD ? obj.prototype : obj;
     Object.defineProperty(target, name, {
         configurable: true,
         writable: true,
@@ -41,19 +41,19 @@ function declareFunction(obj, info) {
 }
 
 function makeEnum(info) {
-    var obj = {};
-    var nValues = GIRepository.enum_info_get_n_values(info);
+    let obj = {};
+    let nValues = GIRepository.enum_info_get_n_values(info);
 
-    for (var i = 0; i < nValues; i++) {
-        var valueInfo = GIRepository.enum_info_get_value(info, i);
-        var valueName = GIRepository.BaseInfo_get_name.call(valueInfo);
-        var valueValue = GIRepository.value_info_get_value(valueInfo);
+    for (let i = 0; i < nValues; i++) {
+        let valueInfo = GIRepository.enum_info_get_value(info, i);
+        let valueName = GIRepository.BaseInfo_get_name.call(valueInfo);
+        let valueValue = GIRepository.value_info_get_value(valueInfo);
         obj[valueName.toUpperCase()] = valueValue;
     }
 
-    var nMethods = GIRepository.enum_info_get_n_methods(info);
-    for (var i = 0; i < nMethods; i++) {
-        var methodInfo = GIRepository.enum_info_get_method(info, i);
+    let nMethods = GIRepository.enum_info_get_n_methods(info);
+    for (let i = 0; i < nMethods; i++) {
+        let methodInfo = GIRepository.enum_info_get_method(info, i);
         declareFunction(constructor, methodInfo);
     }
 
@@ -61,42 +61,42 @@ function makeEnum(info) {
 }
 
 function makeConstant(info) {
-    return gi.GetConstantValue(info);
+    return bindings.GetConstantValue(info);
 }
 
 function makeFunction(info) {
-    return gi.MakeFunction(info);
+    return bindings.MakeFunction(info);
 }
 
 function makeStruct(info) {
     function fieldGetter(fieldInfo) {
         return function() {
-            return gi.BoxedFieldGetter(this, fieldInfo);
+            return bindings.BoxedFieldGetter(this, fieldInfo);
         };
     }
     function fieldSetter(fieldInfo) {
         return function(value) {
-            return gi.BoxedFieldSetter(this, fieldInfo, value);
+            return bindings.BoxedFieldSetter(this, fieldInfo, value);
         };
     }
 
-    var constructor = gi.MakeBoxed(info);
+    let constructor = bindings.MakeBoxed(info);
 
-    var nMethods = GIRepository.struct_info_get_n_methods(info);
-    for (var i = 0; i < nMethods; i++) {
-        var methodInfo = GIRepository.struct_info_get_method(info, i);
+    let nMethods = GIRepository.struct_info_get_n_methods(info);
+    for (let i = 0; i < nMethods; i++) {
+        let methodInfo = GIRepository.struct_info_get_method(info, i);
         declareFunction(constructor, methodInfo);
     }
 
-    var nProperties = GIRepository.struct_info_get_n_fields(info);
-    for (var i = 0; i < nProperties; i++) {
-        var fieldInfo = GIRepository.struct_info_get_field(info, i);
-        var fieldFlags = GIRepository.field_info_get_flags(fieldInfo);
+    let nProperties = GIRepository.struct_info_get_n_fields(info);
+    for (let i = 0; i < nProperties; i++) {
+        let fieldInfo = GIRepository.struct_info_get_field(info, i);
+        let fieldFlags = GIRepository.field_info_get_flags(fieldInfo);
 
-        var fieldName = GIRepository.BaseInfo_get_name.call(fieldInfo);
-        var jsFieldName = fieldName.replace(/-/g, '_');
+        let fieldName = GIRepository.BaseInfo_get_name.call(fieldInfo);
+        let jsFieldName = fieldName.replace(/-/g, '_');
 
-        var desc = {};
+        let desc = {};
 
         if (fieldFlags & GIRepository.FieldInfoFlags.READABLE)
             desc.get = fieldGetter(fieldInfo);
@@ -115,29 +115,29 @@ function makeStruct(info) {
 function makeObject(info) {
     function propertyGetter(propertyName) {
         return function() {
-            return gi.ObjectPropertyGetter(this, propertyName);
+            return bindings.ObjectPropertyGetter(this, propertyName);
         };
     }
     function propertySetter(propertyName) {
         return function(value) {
-            return gi.ObjectPropertySetter(this, propertyName, value);
+            return bindings.ObjectPropertySetter(this, propertyName, value);
         };
     }
 
-    var constructor = gi.MakeClass(info);
+    let constructor = bindings.MakeClass(info);
 
-    var nMethods = GIRepository.object_info_get_n_methods(info);
-    for (var i = 0; i < nMethods; i++) {
-        var methodInfo = GIRepository.object_info_get_method(info, i);
+    let nMethods = GIRepository.object_info_get_n_methods(info);
+    for (let i = 0; i < nMethods; i++) {
+        let methodInfo = GIRepository.object_info_get_method(info, i);
         declareFunction(constructor, methodInfo);
     }
 
-    var nProperties = GIRepository.object_info_get_n_properties(info);
-    for (var i = 0; i < nProperties; i++) {
-        var propertyInfo = GIRepository.object_info_get_property(info, i);
+    let nProperties = GIRepository.object_info_get_n_properties(info);
+    for (let i = 0; i < nProperties; i++) {
+        let propertyInfo = GIRepository.object_info_get_property(info, i);
 
-        var propertyName = GIRepository.BaseInfo_get_name.call(propertyInfo);
-        var jsPropertyName = propertyName.replace(/-/g, '_');
+        let propertyName = GIRepository.BaseInfo_get_name.call(propertyInfo);
+        let jsPropertyName = propertyName.replace(/-/g, '_');
 
         Object.defineProperty(constructor.prototype, jsPropertyName, {
             configurable: true,
@@ -150,7 +150,7 @@ function makeObject(info) {
 }
 
 function makeInfo(info) {
-    var type = GIRepository.BaseInfo_get_type.call(info);
+    let type = GIRepository.BaseInfo_get_type.call(info);
 
     if (type === GIRepository.InfoType.ENUM)
         return makeEnum(info);
@@ -164,30 +164,36 @@ function makeInfo(info) {
         return makeStruct(info);
 }
 
-function importNS(ns, version) {
-    var module = {};
+function importNS(ns) {
+    let module = {};
 
-    var repo = GIRepository.Repository_get_default();
-    GIRepository.Repository_require.call(repo, ns, version || null, 0);
+    let repo = GIRepository.Repository_get_default();
+    GIRepository.Repository_require.call(repo, ns, null, 0);
 
-    var nInfos = GIRepository.Repository_get_n_infos.call(repo, ns);
-    for (var i = 0; i < nInfos; i++) {
-        var info = GIRepository.Repository_get_info.call(repo, ns, i);
-        var name = GIRepository.BaseInfo_get_name.call(info);
+    let nInfos = GIRepository.Repository_get_n_infos.call(repo, ns);
+    for (let i = 0; i < nInfos; i++) {
+        let info = GIRepository.Repository_get_info.call(repo, ns, i);
+        let name = GIRepository.BaseInfo_get_name.call(info);
         module[name] = makeInfo(info);
     }
-
-    var override;
-    try {
-        override = require('./overrides/' + ns);
-    } catch (e) {
-        // No override
-    }
-
-    if (override)
-        override.apply(module);
 
     return module;
 }
 
-module.exports = importNS('EosKnowledgeContent');
+const Eknc = importNS('EosKnowledgeContent');
+
+Eknc.start_glib_mainloop = bindings.StartGLibMainloop;
+
+// Setup promise functions
+Eknc.Engine.prototype.get_object_for_app = bindings.EngineGetObject;
+Eknc.Engine.prototype.get_object = function (id) {
+    return this.get_object_for_app(id, this.default_app_id);
+};
+Eknc.Engine.prototype.query = bindings.EngineQuery;
+
+// Primarily for setting up a 'ekn://' uri handler with electron
+Eknc.Domain.prototype.read_uri = function (uri) {
+    return bindings.DomainReadURI(this, uri);
+};
+
+module.exports = Eknc;

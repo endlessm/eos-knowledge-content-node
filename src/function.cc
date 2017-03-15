@@ -7,8 +7,6 @@
 
 using namespace v8;
 
-namespace GNodeJS {
-
 struct FunctionInfo {
     GIFunctionInfo *info;
     GIFunctionInvoker invoker;
@@ -90,7 +88,7 @@ static void FunctionInvoker(const FunctionCallbackInfo<Value> &args) {
         if (call_parameters[i].type == Parameter::SKIP)
             continue;
 
-        GIArgInfo arg_info = {};
+        GIArgInfo arg_info;
         g_callable_info_load_arg ((GICallableInfo *) info, i, &arg_info);
         GIDirection direction = g_arg_info_get_direction (&arg_info);
 
@@ -164,8 +162,8 @@ static void FunctionInvoker(const FunctionCallbackInfo<Value> &args) {
     args.GetReturnValue ().Set (GIArgumentToV8 (isolate, &return_value_type, &return_value));
 }
 
-static void FunctionDestroyed(const WeakCallbackData<FunctionTemplate, FunctionInfo> &data) {
-    FunctionInfo *func = data.GetParameter ();
+static void FunctionDestroyed(const WeakCallbackInfo<FunctionInfo> &info) {
+    FunctionInfo *func = info.GetParameter ();
     g_base_info_unref (func->info);
     g_function_invoker_destroy (&func->invoker);
     g_free (func);
@@ -181,73 +179,10 @@ Local<Function> MakeFunction(Isolate *isolate, GIBaseInfo *info) {
     Local<Function> fn = tpl->GetFunction ();
 
     Persistent<FunctionTemplate> persistent(isolate, tpl);
-    persistent.SetWeak (func, FunctionDestroyed);
+    persistent.SetWeak (func, FunctionDestroyed, WeakCallbackType::kParameter);
 
     const char *function_name = g_base_info_get_name (info);
     fn->SetName (String::NewFromUtf8 (isolate, function_name));
 
     return fn;
 }
-
-#if 0
-class TrampolineInfo {
-    ffi_cif cif;
-    ffi_closure *closure;
-    Persistent<Function> persistent;
-    GICallableInfo *info;
-    GIScopeType scope_type;
-
-    TrampolineInfo(Local<Function>  function,
-                   GICallableInfo   *info,
-                   GIScopeType       scope_type);
-
-    void Dispose();
-    static void Call(ffi_cif *cif, void *result, void **args, void *data);
-    void *GetClosure();
-};
-
-void TrampolineInfo::Dispose() {
-    persistent = nullptr;
-    g_base_info_unref (info);
-    g_callable_info_free_closure (info, closure);
-};
-
-void TrampolineInfo::Call(ffi_cif *cif,
-                          void *result,
-                          void **args,
-                          void *data) {
-    TrampolineInfo *trampoline = (TrampolineInfo *) data;
-
-    int argc = g_callable_info_get_n_args (trampoline->info);
-    Local<Value> argv[argc];
-
-    for (int i = 0; i < argc; i++) {
-        GIArgInfo arg_info;
-        g_callable_info_load_arg (trampoline->info, i, &arg_info);
-        GITypeInfo type_info;
-        g_arg_info_load_type (&arg_info, &type_info);
-        argv[i] = GIArgumentToV8 (&type_info, (GIArgument *) &args[i]);
-    }
-
-    Local<Function> func = trampoline->func;
-    /* Provide a bogus "this" function. Any interested callers should
-     * bind their callbacks to what they're intersted in... */
-    Local<Object> this_obj = func;
-    Local<Value> return_value = func->Call (this_obj, argc, argv);
-    GITypeInfo type_info;
-    g_callable_info_load_return_type (trampoline->info, &type_info);
-    V8ToGIArgument (&type_info, (GIArgument *) &result, return_value,
-                    g_callable_info_may_return_null (trampoline->info));
-}
-
-TrampolineInfo::TrampolineInfo(Local<Function>   function,
-                               GICallableInfo   *info,
-                               GIScopeType       scope_type) {
-    this->closure = g_callable_info_prepare_closure (info, &cif, Call, this);
-    this->func = Persistent<Function>::New (function);
-    this->info = g_base_info_ref (info);
-    this->scope_type = scope_type;
-}
-#endif
-
-};

@@ -1,6 +1,6 @@
 {
   "name": "eos-knowledge-content",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Node bindings for the EndlessOS knowledge content library",
   "main": "index.js",
   "scripts": {

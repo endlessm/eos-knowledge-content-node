@@ -7,8 +7,6 @@
 
 using namespace v8;
 
-namespace GNodeJS {
-
 Local<Value> GIArgumentToV8(Isolate *isolate, GITypeInfo *type_info, GIArgument *arg) {
     GITypeTag type_tag = g_type_info_get_tag (type_info);
 
@@ -78,6 +76,16 @@ Local<Value> GIArgumentToV8(Isolate *isolate, GITypeInfo *type_info, GIArgument 
             }
         }
         break;
+
+    case GI_TYPE_TAG_GSLIST:
+        {
+            Local<Array> array = Array::New (isolate);
+            GSList *list = (GSList *)arg->v_pointer;
+            for ( ; list != NULL; list = list->next) {
+                array->Set(array->Length(), WrapperFromGObject (isolate, (GObject *)list->data));
+            }
+            return array;
+        }
 
     default:
         g_assert_not_reached ();
@@ -248,6 +256,9 @@ void FreeGIArgument(GITypeInfo *type_info, GIArgument *arg) {
             }
         }
         break;
+    case GI_TYPE_TAG_GSLIST:
+        g_slist_free ((GSList *)arg->v_pointer);
+        break;
     default:
         break;
     }
@@ -272,6 +283,25 @@ void V8ToGValue(GValue *gvalue, Local<Value> value) {
         g_value_set_enum (gvalue, value->Int32Value ());
     } else if (G_VALUE_HOLDS_OBJECT (gvalue)) {
         g_value_set_object (gvalue, GObjectFromWrapper (value));
+    } else if (G_VALUE_HOLDS_VARIANT (gvalue)) {
+        // FIXME: For now, just special case string arrays. Extending to a
+        // general gvariant parser would require the gvariant type in this
+        // function.
+        g_assert (value->IsArray ());
+
+        Local<Array> array = Local<Array>::Cast (value->ToObject ());
+        int length = array->Length ();
+
+        GVariantBuilder builder;
+        g_variant_builder_init (&builder, G_VARIANT_TYPE_STRING_ARRAY);
+
+        for (int i = 0; i < length; i++) {
+            Local<Value> value = array->Get (i);
+            String::Utf8Value str (value);
+            g_variant_builder_add (&builder, "s", *str);
+        }
+
+        g_value_take_variant (gvalue, g_variant_builder_end (&builder));
     } else {
         g_assert_not_reached ();
     }
@@ -297,9 +327,20 @@ Local<Value> GValueToV8(Isolate *isolate, const GValue *gvalue) {
         return Integer::New (isolate, g_value_get_enum (gvalue));
     } else if (G_VALUE_HOLDS_OBJECT (gvalue)) {
         return WrapperFromGObject (isolate, G_OBJECT (g_value_get_object (gvalue)));
+    } else if (G_VALUE_HOLDS_VARIANT (gvalue)) {
+        // FIXME: For now, just special case string arrays. For more complex
+        // gvariants we will just print out the string dump of the data.
+        GVariant *variant = g_value_get_variant (gvalue);
+        if (g_variant_is_of_type (variant, G_VARIANT_TYPE_STRING_ARRAY)) {
+            size_t length;
+            g_autofree const char **strings = g_variant_get_strv (variant, &length);
+            Local<Array> array = Array::New (isolate);
+            for (guint i = 0; i < length; i++)
+                array->Set (i, String::NewFromUtf8 (isolate, strings[i]));
+            return array;
+        }
+        return String::NewFromUtf8 (isolate, g_variant_print (g_value_get_variant (gvalue), false));
     } else {
         g_assert_not_reached ();
     }
 }
-
-};

@@ -1,15 +1,16 @@
 {
   'targets': [
     {
-      'target_name': 'ekn-bindings',
+      'target_name': 'eknbindings',
       'sources': [
-        'src/loop.cc',
-        'src/gi.cc',
+        'src/bindings.cc',
         'src/value.cc',
         'src/function.cc',
         'src/gobject.cc',
-        'src/closure.cc',
         'src/boxed.cc',
+        'src/engine.cc',
+        'src/domain.cc',
+        'src/mainloop.cc',
       ],
       'cflags': [
         '<!@(pkg-config --cflags gobject-introspection-1.0 eos-knowledge-content-0)'

@@ -6,6 +6,9 @@
 #include "boxed.h"
 #include "function.h"
 #include "gobject.h"
+#include "engine.h"
+#include "domain.h"
+#include "mainloop.h"
 
 #include <string.h>
 
@@ -122,7 +125,7 @@ static void ObjectPropertyGetter(const FunctionCallbackInfo<Value> &args) {
     const char *prop_name = *prop_name_v;
 
     GParamSpec *pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (gobject), prop_name);
-    GValue value = {};
+    GValue value = G_VALUE_INIT;
     g_value_init (&value, G_PARAM_SPEC_VALUE_TYPE (pspec));
 
     g_object_get_property (gobject, prop_name, &value);
@@ -136,7 +139,7 @@ static void ObjectPropertySetter(const FunctionCallbackInfo<Value> &args) {
     const char *prop_name = *prop_name_v;
 
     GParamSpec *pspec = g_object_class_find_property (G_OBJECT_GET_CLASS (gobject), prop_name);
-    GValue value = {};
+    GValue value = G_VALUE_INIT;
     g_value_init (&value, G_PARAM_SPEC_VALUE_TYPE (pspec));
 
     V8ToGValue (&value, args[2]);
@@ -188,6 +191,13 @@ void InitModule(Local<Object> exports, Local<Value> module, void *priv) {
     exports->Set (String::NewFromUtf8 (isolate, "MakeBoxed"), FunctionTemplate::New (isolate, MakeBoxed)->GetFunction ());
     exports->Set (String::NewFromUtf8 (isolate, "BoxedFieldGetter"), FunctionTemplate::New (isolate, BoxedFieldGetter)->GetFunction ());
     exports->Set (String::NewFromUtf8 (isolate, "BoxedFieldSetter"), FunctionTemplate::New (isolate, BoxedFieldSetter)->GetFunction ());
+
+    exports->Set (String::NewFromUtf8 (isolate, "EngineGetObject"), FunctionTemplate::New (isolate, EngineGetObject)->GetFunction ());
+    exports->Set (String::NewFromUtf8 (isolate, "EngineQuery"), FunctionTemplate::New (isolate, EngineQuery)->GetFunction ());
+
+    exports->Set (String::NewFromUtf8 (isolate, "DomainReadURI"), FunctionTemplate::New (isolate, DomainReadURI)->GetFunction ());
+
+    exports->Set (String::NewFromUtf8 (isolate, "StartGLibMainloop"), FunctionTemplate::New (isolate, StartGLibMainloop)->GetFunction ());
 }
 
 NODE_MODULE(eknbindings, InitModule)
